@@ -1,0 +1,14 @@
+# dependencies
+node_modules
+.bun
+
+# logs
+*.log
+
+# misc
+.DS_Store
+*.tsbuildinfo
+
+# local test output
+/tmp-*
+/.test-output
