@@ -1,0 +1,30 @@
+{
+  "name": "create-stack",
+  "version": "0.1.0",
+  "description": "Interactive CLI to scaffold apps (Next.js, Expo) with pre-wired, opt-in modules.",
+  "type": "module",
+  "bin": {
+    "create-stack": "./src/index.ts"
+  },
+  "files": ["src", "templates", "README.md"],
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "lint": "biome check",
+    "format": "biome format --write"
+  },
+  "packageManager": "bun@1.2.5",
+  "engines": {
+    "bun": ">=1.1.0"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.6",
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "keywords": ["cli", "scaffold", "nextjs", "expo", "starter", "generator"],
+  "license": "MIT"
+}
