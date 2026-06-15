@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Module, ProjectContext } from "../types.ts";
 import { copyTemplateFile } from "../utils/fs.ts";
+import { LayoutEditor } from "../utils/layout.ts";
 import { logger } from "../utils/logger.ts";
 import { addDeps } from "../utils/pm.ts";
 
@@ -33,9 +34,28 @@ async function wrapNextConfig(ctx: ProjectContext): Promise<void> {
   await writeFile(configPath, source, "utf8");
 }
 
+/** Wrap the root layout in <NextIntlClientProvider> and use the request locale. */
+async function wireLayout(ctx: ProjectContext): Promise<void> {
+  const layoutPath = join(ctx.dir, "src", "app", "layout.tsx");
+  const editor = await LayoutEditor.load(layoutPath);
+  editor
+    .addImports([
+      'import { NextIntlClientProvider } from "next-intl";',
+      'import { getLocale, getMessages } from "next-intl/server";',
+    ])
+    .ensureAsync()
+    .addExportConst('export const dynamic = "force-dynamic";')
+    .addPreReturn("const locale = await getLocale();")
+    .addPreReturn("const messages = await getMessages();")
+    .setHtmlLang("locale")
+    .wrapBody("<NextIntlClientProvider messages={messages}>", "</NextIntlClientProvider>");
+  await editor.save(layoutPath);
+}
+
 /**
  * Cookie/Accept-Language driven internationalization with next-intl, mirroring
- * the starterkit (en/fr, default fr).
+ * the starterkit (en/fr, default fr). Wires the request config into both
+ * next.config and the root layout so it works out of the box.
  */
 export const i18nModule: Module = {
   id: "i18n",
@@ -48,6 +68,7 @@ export const i18nModule: Module = {
     }
     await wrapNextConfig(ctx);
     await addDeps(ctx, ["next-intl"]);
-    logger.success("Internationalization added");
+    await wireLayout(ctx);
+    logger.success("Internationalization added & wired into the root layout");
   },
 };
