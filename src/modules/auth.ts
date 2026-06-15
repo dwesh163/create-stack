@@ -68,6 +68,5 @@ export const authModule: Module = {
     await addDeps(ctx, ["next-auth@beta"]);
     await wireLayout(ctx);
     logger.success("Authentication added & wired into the root layout");
-    logger.dim("  → fill ENTRA_ID / ENTRA_SECRET / ENTRA_ISSUER in .env");
   },
 };
