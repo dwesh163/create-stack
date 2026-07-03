@@ -1,8 +1,8 @@
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Module } from "../types.ts";
 import { run } from "../utils/exec.ts";
-import { appendFileEnsured, copyTemplateFile, editJson, templatePath } from "../utils/fs.ts";
+import { appendFileEnsured, copyTemplateFile, editJson, fileExists, templatePath } from "../utils/fs.ts";
 import { logger } from "../utils/logger.ts";
 import { addDeps, addDevDeps, execRunner } from "../utils/pm.ts";
 
@@ -39,11 +39,24 @@ export const prismaModule: Module = {
     // Keep the generated client out of version control.
     await appendFileEnsured(join(ctx.dir, ".gitignore"), "\n# prisma\n/generated\n");
 
-    // Wire `bun dev` to spin up a local Postgres + regenerate the client.
+    // Wire `bun dev` and `bun build` to regenerate the client first.
     await editJson<{ scripts?: Record<string, string> }>(join(ctx.dir, "package.json"), (pkg) => {
       pkg.scripts ??= {};
       pkg.scripts.dev = DEV_SCRIPT;
+      pkg.scripts.build = "prisma generate && next build";
     });
+
+    // If the docker module already dropped a Dockerfile, make sure it generates
+    // the client too — the builder stage has no other way to get it.
+    const dockerfilePath = join(ctx.dir, "Dockerfile");
+    if (await fileExists(dockerfilePath)) {
+      const dockerfile = await readFile(dockerfilePath, "utf8");
+      const patched = dockerfile.replace(
+        "RUN node node_modules/.bin/next build",
+        "RUN bunx prisma generate\nRUN node node_modules/.bin/next build",
+      );
+      if (patched !== dockerfile) await writeFile(dockerfilePath, patched, "utf8");
+    }
 
     await addDevDeps(ctx, ["prisma", "dotenv", "@types/pg"]);
     await addDeps(ctx, ["@prisma/client", "@prisma/adapter-pg", "pg"]);

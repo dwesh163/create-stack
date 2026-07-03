@@ -3,8 +3,6 @@ name: Release
 on:
     push:
         branches: [main]
-        paths:
-            - package.json
 
 jobs:
     lint:
@@ -54,6 +52,9 @@ jobs:
         name: Build and Push
         needs: [lint, detect-version]
         if: needs.detect-version.outputs.should_release == 'true'
+        permissions:
+            contents: read
+            packages: write
         uses: ./.github/workflows/_build.yaml
         with:
             tags: ${{ needs.detect-version.outputs.tags }}

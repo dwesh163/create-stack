@@ -1,4 +1,4 @@
-import { appendFile, cp, mkdir, readFile, writeFile } from "node:fs/promises";
+import { appendFile, cp, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,6 +32,13 @@ export async function writeFileEnsured(dest: string, contents: string): Promise<
 export async function appendFileEnsured(dest: string, contents: string): Promise<void> {
   await mkdir(dirname(dest), { recursive: true });
   await appendFile(dest, contents, "utf8");
+}
+
+/** Whether a file exists at the given absolute path. */
+export async function fileExists(path: string): Promise<boolean> {
+  return await stat(path)
+    .then(() => true)
+    .catch(() => false);
 }
 
 /** Read and parse a JSON file. */
